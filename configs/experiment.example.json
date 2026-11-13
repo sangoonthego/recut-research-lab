@@ -1,0 +1,25 @@
+{
+  "experiment_name": "baseline_majority_class",
+  "model_type": "majority",
+  "random_seed": 42,
+  "data": {
+    "dataset_name": "adtec_consistency",
+    "raw_dir": "data/raw/adtec_consistency",
+    "text_fields": ["title", "lp_text"],
+    "target_field": "label"
+  },
+  "classifier": {
+    "strategy": "most_frequent"
+  },
+  "evaluation": {
+    "metrics": [
+      "accuracy",
+      "macro_f1",
+      "precision",
+      "recall",
+      "per_class_f1",
+      "confusion_matrix",
+      "inference_latency"
+    ]
+  }
+}

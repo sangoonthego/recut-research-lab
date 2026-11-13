@@ -1,0 +1,82 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Testing and coverage
+.pytest_cache/
+.pytest_temp/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*-checkpoint.ipynb
+
+# Data directories (exclude dataset files, keep directory structure)
+data/raw/*
+!data/raw/.gitkeep
+!data/raw/README.md
+data/processed/*
+!data/processed/.gitkeep
+!data/processed/README.md
+data/recut_eval/*
+!data/recut_eval/.gitkeep
+!data/recut_eval/README.md
+
+# Trained models and serialized checkpoints
+models/*
+!models/.gitkeep
+!models/README.md
+
+# Experiment run artifacts
+experiments/runs/*
+!experiments/runs/.gitkeep
+!experiments/runs/README.md
+
+# Generated reports and figures
+reports/generated/*
+!reports/generated/.gitkeep
+!reports/generated/README.md
+
+# Operating System and IDE files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
