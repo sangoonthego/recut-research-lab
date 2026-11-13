@@ -10,3 +10,4 @@ This directory stores generated analytical reports, charts, and audit summaries.
   - Figures and plots (e.g. confusion matrix plots, text length distributions).
 
 All generated files in `generated/` are excluded from git commits by default.
+

@@ -62,3 +62,4 @@ Before running modeling pipelines, the data audit script (`scripts/run_audit.py`
 - **Deterministic Seeds**: All scripts and models accept a `--seed` parameter (default `42`), which is propagated to Python's `random`, `numpy`, and `os.environ["PYTHONHASHSEED"]`.
 - **Environment Logging**: Every experiment run logs system hardware, Python version, platform string, and timestamps to `metadata.json`.
 - **Artifact Isolation**: Model checkpoints are stored in `models/`, run logs in `experiments/runs/`, and summary reports in `reports/generated/`.
+

@@ -270,3 +270,4 @@ def format_audit_markdown(summary: DatasetAuditSummary) -> str:
         lines.append("- No data leakage or critical duplicate issues detected.")
 
     return "\n".join(lines)
+

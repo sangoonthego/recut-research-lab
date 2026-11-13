@@ -100,3 +100,4 @@ class LexicalOverlapExtractor(BaseEstimator, TransformerMixin):
             feats = calculate_lexical_overlap(row[self.title_col], row[self.lp_col])
             rows.append(list(feats.values()))
         return np.array(rows, dtype=np.float32)
+

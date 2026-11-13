@@ -16,3 +16,4 @@ This directory stores configuration templates and local experiment run records.
 - Configurations should be saved or referenced from `configs/`.
 - Training data is used exclusively for model fitting; validation data is used for tuning and model selection.
 - The official test split remains untouched until final frozen evaluation.
+

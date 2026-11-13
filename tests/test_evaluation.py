@@ -57,3 +57,4 @@ def test_measure_inference_latency():
     assert len(preds) == 3
     assert latency_ms >= 0.0
     assert total_sec >= 0.0
+

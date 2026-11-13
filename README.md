@@ -166,3 +166,4 @@ python -m compileall -q src scripts
 1. **Tooling & Code**: The software and scaffolding in this repository are licensed under the [MIT License](LICENSE).
 2. **Benchmark Dataset**: The CyberAgent AdTEC dataset is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). It is strictly restricted to non-commercial research use.
 3. **Data Protection**: Raw dataset files, processed text, model checkpoints, and generated run logs are excluded from Git commits via `.gitignore`.
+

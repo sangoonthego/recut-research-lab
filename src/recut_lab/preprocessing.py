@@ -91,3 +91,4 @@ class TextPairCombiner(BaseEstimator, TransformerMixin):
             for t, lp in zip(titles, lps)
         ]
         return combined
+

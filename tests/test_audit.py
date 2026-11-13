@@ -66,3 +66,4 @@ def test_run_dataset_audit_and_markdown():
     md = format_audit_markdown(summary)
     assert "# Dataset Audit Report" in md
     assert "| Split | Total Rows |" in md
+

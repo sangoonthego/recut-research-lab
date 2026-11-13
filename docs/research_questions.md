@@ -40,3 +40,4 @@ This research laboratory investigates binary consistency classification (`consis
 
 - **Ad Consistency vs. Medical Truth**: The AdTEC benchmark evaluates editorial and thematic consistency between ad titles and landing pages. It does **not** perform medical fact-checking or evaluate scientific efficacy claims.
 - **Dataset Licensing**: The AdTEC dataset is published under CC BY-NC-SA 4.0 (Non-Commercial, Share-Alike). Experimental findings in this lab are strictly for research and benchmarking.
+

@@ -70,3 +70,4 @@ def test_load_adtec_dataset_missing_split(tmp_path: Path):
     # Directory exists but splits are absent
     with pytest.raises(FileNotFoundError, match="Could not find 'train' split"):
         load_adtec_dataset(tmp_path)
+

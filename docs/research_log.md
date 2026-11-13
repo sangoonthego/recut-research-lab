@@ -42,3 +42,4 @@
 - Execute automated audit script `scripts/run_audit.py` once data is loaded.
 - Run baseline model training (`scripts/train_baseline.py`) and log benchmark results in `reports/generated/`.
 - Prepare Notebooks 01 and 02 with live audit and baseline evaluation, and skeletonize Notebooks 03–06.
+

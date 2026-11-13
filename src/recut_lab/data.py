@@ -243,3 +243,4 @@ def create_synthetic_dataset(num_samples_per_split: int = 20) -> ConsistencyData
         test=test_df,
         metadata={"is_synthetic": True, "num_samples": num_samples_per_split},
     )
+

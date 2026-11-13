@@ -42,3 +42,4 @@
   The benchmark measures whether an ad headline aligns with the subject matter and claims presented on its destination landing page. It is **not** a three-class factual claim-verification task (e.g. `SUPPORTS`, `REFUTES`, `NOT_ENOUGH_INFO`).
 - **Skincare and Medical Claims**:
   The dataset contains diverse consumer advertising verticals. It does **not** evaluate clinical trials, skincare medical efficacy, or pharmaceutical compliance claims.
+

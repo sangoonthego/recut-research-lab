@@ -171,3 +171,4 @@ def get_baseline_model(model_type: str, **kwargs) -> BaselineModel:
     if normalized in ("tfidf_logreg", "tfidf_lr", "logistic_regression", "tfidf"):
         return TfidfLogRegBaseline(**kwargs)
     raise ValueError(f"Unknown baseline model type: '{model_type}'. Expected 'majority' or 'tfidf_logreg'.")
+

@@ -70,3 +70,4 @@ def test_get_baseline_model_factory():
 
     with pytest.raises(ValueError, match="Unknown baseline model"):
         get_baseline_model("unsupported_model_type")
+
