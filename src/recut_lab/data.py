@@ -6,12 +6,19 @@ import hashlib
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pandas as pd
 
 EXPECTED_COLUMNS: List[str] = ["label", "lp_text", "title"]
 VALID_LABELS: Set[str] = {"consistent", "inconsistent"}
+
+# Published official benchmark row counts from NAACL 2025 paper / AdTEC repo
+PUBLISHED_SPLIT_COUNTS: Dict[str, int] = {
+    "train": 10635,
+    "valid": 945,
+    "test": 970,
+}
 
 
 @dataclass
@@ -44,6 +51,19 @@ class ConsistencyDataset:
             "test": len(self.test),
         }
 
+    def verify_split_counts(self) -> Dict[str, Dict[str, Any]]:
+        """Verify split row counts against official published AdTEC benchmark counts."""
+        results = {}
+        for split_name, expected_count in PUBLISHED_SPLIT_COUNTS.items():
+            actual_count = len(self.get_split(split_name))
+            results[split_name] = {
+                "expected": expected_count,
+                "actual": actual_count,
+                "match": expected_count == actual_count,
+                "difference": actual_count - expected_count,
+            }
+        return results
+
 
 def compute_file_sha256(file_path: Path | str) -> str:
     """Compute deterministic SHA-256 checksum for a local file."""
@@ -64,6 +84,7 @@ def validate_schema(df: pd.DataFrame, split_name: str = "dataset") -> None:
 
     Raises:
         ValueError: If columns are missing or if unsupported labels are present.
+        TypeError: If input is not a pandas DataFrame.
     """
     if not isinstance(df, pd.DataFrame):
         raise TypeError(f"Expected pandas DataFrame for {split_name}, got {type(df)}")
@@ -87,7 +108,9 @@ def validate_schema(df: pd.DataFrame, split_name: str = "dataset") -> None:
 
 
 def load_adtec_split(split_path: Path | str, split_name: str = "") -> pd.DataFrame:
-    """Load a single split file from JSONL or CSV and validate schema.
+    """Load a single split file from TSV, JSONL, or CSV and validate schema.
+
+    Preserves original text contents without modification, truncation, or normalization.
 
     Args:
         split_path: Path to the split file.
@@ -103,19 +126,25 @@ def load_adtec_split(split_path: Path | str, split_name: str = "") -> pd.DataFra
             "Run 'python scripts/download_adtec.py' to obtain the dataset."
         )
 
-    if path.suffix == ".jsonl":
-        df = pd.read_json(path, lines=True)
+    # TSV files are the official format for AdTEC
+    if path.suffix == ".tsv":
+        df = pd.read_csv(path, sep="\t", encoding="utf-8", dtype=str, keep_default_na=False)
+    elif path.suffix == ".jsonl":
+        df = pd.read_json(path, lines=True, dtype={"label": str, "lp_text": str, "title": str})
     elif path.suffix in (".json", ".jsonl"):
-        df = pd.read_json(path)
+        df = pd.read_json(path, dtype={"label": str, "lp_text": str, "title": str})
     elif path.suffix == ".csv":
-        df = pd.read_csv(path)
+        df = pd.read_csv(path, encoding="utf-8", dtype=str, keep_default_na=False)
     elif path.suffix == ".parquet":
         df = pd.read_parquet(path)
     else:
-        # Fallback to jsonl
-        df = pd.read_json(path, lines=True)
+        # Default try TSV then jsonl
+        try:
+            df = pd.read_csv(path, sep="\t", encoding="utf-8", dtype=str, keep_default_na=False)
+        except Exception:
+            df = pd.read_json(path, lines=True)
 
-    # Normalize column types to strings where applicable
+    # Ensure all expected columns exist as string types
     for col in EXPECTED_COLUMNS:
         if col in df.columns:
             df[col] = df[col].astype(str)
@@ -126,6 +155,8 @@ def load_adtec_split(split_path: Path | str, split_name: str = "") -> pd.DataFra
 
 def load_adtec_dataset(data_dir: Path | str = "data/raw/adtec_consistency") -> ConsistencyDataset:
     """Deterministically load official AdTEC train, valid, and test splits from a directory.
+
+    Prioritizes official TSV format, with fallback to JSONL or CSV.
 
     Args:
         data_dir: Directory containing train/valid/test split files.
@@ -143,7 +174,8 @@ def load_adtec_dataset(data_dir: Path | str = "data/raw/adtec_consistency") -> C
     splits: Dict[str, pd.DataFrame] = {}
     for split in ["train", "valid", "test"]:
         found_file = None
-        for ext in [".jsonl", ".csv", ".parquet"]:
+        # Prioritize TSV (official upstream benchmark format), then jsonl, csv, parquet
+        for ext in [".tsv", ".jsonl", ".csv", ".parquet"]:
             candidate = dir_path / f"{split}{ext}"
             if candidate.exists():
                 found_file = candidate
@@ -152,7 +184,7 @@ def load_adtec_dataset(data_dir: Path | str = "data/raw/adtec_consistency") -> C
         if not found_file:
             raise FileNotFoundError(
                 f"Could not find '{split}' split in '{dir_path.resolve()}'. "
-                f"Expected {split}.jsonl or {split}.csv. "
+                f"Expected {split}.tsv, {split}.jsonl, or {split}.csv. "
                 "Run 'python scripts/download_adtec.py' to acquire the dataset."
             )
         splits[split] = load_adtec_split(found_file, split_name=split)
@@ -171,12 +203,12 @@ def load_adtec_dataset(data_dir: Path | str = "data/raw/adtec_consistency") -> C
     )
 
 
-def save_adtec_splits(
+def save_adtec_tsv_splits(
     splits: Dict[str, pd.DataFrame],
     output_dir: Path | str,
     source_metadata: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, str]:
-    """Persist splits as UTF-8 JSONL files and write metadata manifest with SHA-256 hashes.
+    """Persist splits as UTF-8 TSV files and write metadata manifest with SHA-256 hashes.
 
     Args:
         splits: Dictionary mapping split names ('train', 'valid', 'test') to DataFrames.
@@ -194,6 +226,49 @@ def save_adtec_splits(
 
     for split_name, df in splits.items():
         validate_schema(df, split_name=split_name)
+        target_file = out_path / f"{split_name}.tsv"
+        df.to_csv(target_file, sep="\t", index=False, encoding="utf-8")
+        sha = compute_file_sha256(target_file)
+        checksums[split_name] = sha
+        file_records[split_name] = {
+            "filename": target_file.name,
+            "sha256": sha,
+            "row_count": len(df),
+            "file_size_bytes": target_file.stat().st_size,
+        }
+
+    manifest = {
+        "dataset_name": "cyberagent/AdTEC",
+        "config_name": "ad-consistency",
+        "license": "CC BY-NC-SA 4.0",
+        "task": "binary_ad_consistency",
+        "format": "tsv",
+        "labels": sorted(list(VALID_LABELS)),
+        "splits": file_records,
+        "source_metadata": source_metadata or {},
+    }
+
+    manifest_path = out_path / "metadata.json"
+    with manifest_path.open("w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2, ensure_ascii=False)
+
+    return checksums
+
+
+def save_adtec_splits(
+    splits: Dict[str, pd.DataFrame],
+    output_dir: Path | str,
+    source_metadata: Optional[Dict[str, Any]] = None,
+) -> Dict[str, str]:
+    """Persist splits as UTF-8 JSONL files (retained for backward compatibility)."""
+    out_path = Path(output_dir)
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    checksums: Dict[str, str] = {}
+    file_records: Dict[str, Any] = {}
+
+    for split_name, df in splits.items():
+        validate_schema(df, split_name=split_name)
         target_file = out_path / f"{split_name}.jsonl"
         df.to_json(target_file, orient="records", lines=True, force_ascii=False)
         sha = compute_file_sha256(target_file)
@@ -202,6 +277,7 @@ def save_adtec_splits(
             "filename": target_file.name,
             "sha256": sha,
             "row_count": len(df),
+            "file_size_bytes": target_file.stat().st_size,
         }
 
     manifest = {
@@ -243,4 +319,3 @@ def create_synthetic_dataset(num_samples_per_split: int = 20) -> ConsistencyData
         test=test_df,
         metadata={"is_synthetic": True, "num_samples": num_samples_per_split},
     )
-

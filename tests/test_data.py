@@ -6,10 +6,12 @@ import pytest
 
 from recut_lab.data import (
     ConsistencyDataset,
+    PUBLISHED_SPLIT_COUNTS,
     create_synthetic_dataset,
     load_adtec_dataset,
     load_adtec_split,
     save_adtec_splits,
+    save_adtec_tsv_splits,
     validate_schema,
 )
 
@@ -60,6 +62,29 @@ def test_save_and_load_splits(tmp_path: Path):
     assert loaded_ds.get_split("train").shape[0] == 6
 
 
+def test_save_and_load_tsv_splits(tmp_path: Path):
+    ds = create_synthetic_dataset(num_samples_per_split=8)
+    splits = {"train": ds.train, "valid": ds.valid, "test": ds.test}
+
+    checksums = save_adtec_tsv_splits(splits, tmp_path)
+    assert "train" in checksums
+    assert (tmp_path / "train.tsv").is_file()
+
+    loaded_ds = load_adtec_dataset(tmp_path)
+    assert len(loaded_ds.train) == 8
+    assert len(loaded_ds.valid) == 4
+    assert len(loaded_ds.test) == 4
+
+
+def test_verify_split_counts():
+    ds = create_synthetic_dataset(num_samples_per_split=10)
+    verif = ds.verify_split_counts()
+    assert "train" in verif
+    assert verif["train"]["expected"] == PUBLISHED_SPLIT_COUNTS["train"]
+    assert verif["train"]["actual"] == 10
+    assert not verif["train"]["match"]  # synthetic is 10, not 10635
+
+
 def test_load_adtec_dataset_missing_dir(tmp_path: Path):
     non_existent = tmp_path / "does_not_exist"
     with pytest.raises(FileNotFoundError, match="does not exist"):
@@ -70,4 +95,3 @@ def test_load_adtec_dataset_missing_split(tmp_path: Path):
     # Directory exists but splits are absent
     with pytest.raises(FileNotFoundError, match="Could not find 'train' split"):
         load_adtec_dataset(tmp_path)
-
