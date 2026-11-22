@@ -92,3 +92,71 @@ class TextPairCombiner(BaseEstimator, TransformerMixin):
         ]
         return combined
 
+
+VALID_INPUT_MODES = ("title", "lp_text", "pair")
+
+
+class TextInputSelector(BaseEstimator, TransformerMixin):
+    """Scikit-learn transformer selecting title, lp_text, or a deterministic pair string.
+
+    Supports:
+        - ``"title"``: Extracts and optionally normalizes advertising titles only (B1).
+        - ``"lp_text"``: Extracts and optionally normalizes landing-page texts only (B2).
+        - ``"pair"``: Concatenates title and landing-page text with an explicit separator (B3).
+    """
+
+    def __init__(
+        self,
+        mode: str = "pair",
+        title_col: str = "title",
+        lp_col: str = "lp_text",
+        separator: str = " [SEP] ",
+        normalize: bool = True,
+    ):
+        self.mode = mode
+        self.title_col = title_col
+        self.lp_col = lp_col
+        self.separator = separator
+        self.normalize = normalize
+
+    def _validate_mode(self) -> None:
+        if self.mode not in VALID_INPUT_MODES:
+            raise ValueError(
+                f"Invalid input mode '{self.mode}'. Expected one of {VALID_INPUT_MODES}."
+            )
+
+    def fit(self, X: pd.DataFrame, y=None):
+        self._validate_mode()
+        return self
+
+    def transform(self, X: pd.DataFrame) -> List[str]:
+        """Extract configured text input from DataFrame rows."""
+        self._validate_mode()
+        if not isinstance(X, pd.DataFrame):
+            raise TypeError(f"Expected pandas DataFrame, got {type(X)}")
+
+        if self.mode == "title":
+            if self.title_col not in X.columns:
+                raise ValueError(f"Missing column '{self.title_col}' for mode='title'.")
+            return [
+                normalize_japanese_text(t) if self.normalize else str(t)
+                for t in X[self.title_col].tolist()
+            ]
+
+        if self.mode == "lp_text":
+            if self.lp_col not in X.columns:
+                raise ValueError(f"Missing column '{self.lp_col}' for mode='lp_text'.")
+            return [
+                normalize_japanese_text(lp) if self.normalize else str(lp)
+                for lp in X[self.lp_col].tolist()
+            ]
+
+        # mode == "pair"
+        for col in (self.title_col, self.lp_col):
+            if col not in X.columns:
+                raise ValueError(f"Missing column '{col}' for mode='pair'.")
+        return [
+            combine_ad_inputs(t, lp, separator=self.separator, normalize=self.normalize)
+            for t, lp in zip(X[self.title_col].tolist(), X[self.lp_col].tolist())
+        ]
+
