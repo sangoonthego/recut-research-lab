@@ -24,6 +24,15 @@ from recut_lab.baseline import (
     run_m2_baseline_benchmark,
 )
 from recut_lab.experiment import ExperimentManager
+from recut_lab.diagnostics import (
+    M2_0_1_DEFAULT_CONFIG,
+    SeparateBlocksTfidfLogReg,
+    TruncatedLpPairBaseline,
+    compute_d1_score_diagnostics,
+    compute_seen_unseen_confounding,
+    extract_class_scores,
+    run_m2_failure_diagnostics,
+)
 
 __version__ = "0.1.0"
 
@@ -42,5 +51,12 @@ __all__ = [
     "TfidfLogRegBaseline",
     "run_m2_baseline_benchmark",
     "ExperimentManager",
+    "M2_0_1_DEFAULT_CONFIG",
+    "SeparateBlocksTfidfLogReg",
+    "TruncatedLpPairBaseline",
+    "compute_d1_score_diagnostics",
+    "compute_seen_unseen_confounding",
+    "extract_class_scores",
+    "run_m2_failure_diagnostics",
 ]
 
