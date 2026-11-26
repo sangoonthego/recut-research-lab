@@ -33,6 +33,15 @@ from recut_lab.diagnostics import (
     extract_class_scores,
     run_m2_failure_diagnostics,
 )
+from recut_lab.generalization import (
+    M2_1_DEFAULT_CONFIG,
+    PROTOCOL_A,
+    PROTOCOL_B,
+    assign_lp_group_ids,
+    audit_lp_groups,
+    load_adtec_train_only,
+    run_rq1_generalization_study,
+)
 
 __version__ = "0.1.0"
 
@@ -40,6 +49,7 @@ __all__ = [
     "ConsistencyDataset",
     "load_adtec_dataset",
     "load_adtec_train_valid",
+    "load_adtec_train_only",
     "validate_schema",
     "LABEL_ORDER",
     "benchmark_inference_latency",
@@ -58,5 +68,11 @@ __all__ = [
     "compute_seen_unseen_confounding",
     "extract_class_scores",
     "run_m2_failure_diagnostics",
+    "M2_1_DEFAULT_CONFIG",
+    "PROTOCOL_A",
+    "PROTOCOL_B",
+    "assign_lp_group_ids",
+    "audit_lp_groups",
+    "run_rq1_generalization_study",
 ]
 
