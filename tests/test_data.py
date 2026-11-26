@@ -10,6 +10,7 @@ from recut_lab.data import (
     create_synthetic_dataset,
     load_adtec_dataset,
     load_adtec_split,
+    load_adtec_train_valid,
     save_adtec_splits,
     save_adtec_tsv_splits,
     validate_schema,
@@ -95,3 +96,16 @@ def test_load_adtec_dataset_missing_split(tmp_path: Path):
     # Directory exists but splits are absent
     with pytest.raises(FileNotFoundError, match="Could not find 'train' split"):
         load_adtec_dataset(tmp_path)
+
+
+def test_load_adtec_train_valid_never_requires_test(tmp_path: Path):
+    """Ensure load_adtec_train_valid succeeds without test.tsv present (split safety)."""
+    ds = create_synthetic_dataset(num_samples_per_split=6)
+    ds.train.to_csv(tmp_path / "train.tsv", sep="\t", index=False, encoding="utf-8")
+    ds.valid.to_csv(tmp_path / "valid.tsv", sep="\t", index=False, encoding="utf-8")
+    assert not (tmp_path / "test.tsv").exists()
+
+    train_df, valid_df, metadata = load_adtec_train_valid(tmp_path)
+    assert len(train_df) == 6
+    assert len(valid_df) == 4
+    assert isinstance(metadata, dict)

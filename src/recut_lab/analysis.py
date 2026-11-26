@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -117,4 +117,69 @@ def get_top_tfidf_features(
             results[str(c_name)] = [(str(feature_names[i]), round(float(c_weights[i]), 4)) for i in top_idx]
 
     return results
+
+
+def build_error_inspection_table(
+    valid_df: pd.DataFrame,
+    predictions_df: pd.DataFrame,
+    model_id: str,
+    error_type: Optional[str] = None,
+    limit: Optional[int] = None,
+) -> pd.DataFrame:
+    """Join validation predictions with in-memory full Japanese text for inspection.
+
+    Only operates on validation data in memory; does not persist source text to disk.
+    Columns returned match M2.0 Table 2:
+        sample_id, true_label, predicted_label, model_score, lp_text, title
+
+    Note:
+        ``model_score`` is the raw uncalibrated ``predict_proba`` score for the
+        ``inconsistent`` class and must not be interpreted as a calibrated probability.
+    """
+    subset = predictions_df[
+        (predictions_df["model_id"] == model_id) & (predictions_df["is_error"])
+    ].copy()
+
+    if error_type is not None:
+        subset = subset[subset["error_type"] == error_type].copy()
+
+    # Sort deterministically by confidence in the erroneous prediction (highest error score first)
+    if "score_inconsistent" in subset.columns:
+        subset["_sort_score"] = subset.apply(
+            lambda r: (
+                float(r["score_inconsistent"])
+                if r["predicted_label"] == "inconsistent" and pd.notna(r["score_inconsistent"])
+                else (
+                    float(r["score_consistent"])
+                    if pd.notna(r.get("score_consistent"))
+                    else 0.0
+                )
+            ),
+            axis=1,
+        )
+        subset = subset.sort_values(
+            by=["_sort_score", "valid_row_index"], ascending=[False, True]
+        )
+
+    if limit is not None:
+        subset = subset.head(limit)
+
+    rows = []
+    for _, pred_row in subset.iterrows():
+        v_idx = int(pred_row["valid_row_index"])
+        src_row = valid_df.loc[v_idx]
+        score_val = pred_row.get("score_inconsistent")
+        rows.append({
+            "sample_id": pred_row["sample_id"],
+            "true_label": pred_row["true_label"],
+            "predicted_label": pred_row["predicted_label"],
+            "model_score": round(float(score_val), 4) if pd.notna(score_val) else None,
+            "lp_text": str(src_row["lp_text"]),
+            "title": str(src_row["title"]),
+        })
+
+    return pd.DataFrame(
+        rows,
+        columns=["sample_id", "true_label", "predicted_label", "model_score", "lp_text", "title"],
+    )
 

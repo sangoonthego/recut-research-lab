@@ -92,3 +92,113 @@ class TextPairCombiner(BaseEstimator, TransformerMixin):
         ]
         return combined
 
+
+VALID_INPUT_MODES = ("title", "lp_text", "pair")
+
+
+class TextInputSelector(BaseEstimator, TransformerMixin):
+    """Scikit-learn transformer selecting title, lp_text, or a deterministic pair string.
+
+    Supports:
+        - ``"title"``: Extracts and optionally normalizes advertising titles only (B1).
+        - ``"lp_text"``: Extracts and optionally normalizes landing-page texts only (B2).
+        - ``"pair"``: Concatenates title and landing-page text with an explicit separator (B3).
+    """
+
+    def __init__(
+        self,
+        mode: str = "pair",
+        title_col: str = "title",
+        lp_col: str = "lp_text",
+        separator: str = " [SEP] ",
+        normalize: bool = True,
+        lp_max_chars: Optional[int] = None,
+    ):
+        self.mode = mode
+        self.title_col = title_col
+        self.lp_col = lp_col
+        self.separator = separator
+        self.normalize = normalize
+        self.lp_max_chars = lp_max_chars
+
+    def _validate_mode(self) -> None:
+        if self.mode not in VALID_INPUT_MODES:
+            raise ValueError(
+                f"Invalid input mode '{self.mode}'. Expected one of {VALID_INPUT_MODES}."
+            )
+        lp_cap = getattr(self, "lp_max_chars", None)
+        if lp_cap is not None and lp_cap <= 0:
+            raise ValueError(f"lp_max_chars must be positive, got {lp_cap}.")
+
+    def _prepare_lp(self, text: Optional[str]) -> str:
+        clean = normalize_japanese_text(text) if self.normalize else str(text)
+        lp_cap = getattr(self, "lp_max_chars", None)
+        if lp_cap is not None:
+            return clean[:lp_cap]
+        return clean
+
+    def fit(self, X: pd.DataFrame, y=None):
+        self._validate_mode()
+        return self
+
+    def transform(self, X: pd.DataFrame) -> List[str]:
+        """Extract configured text input from DataFrame rows."""
+        self._validate_mode()
+        if not isinstance(X, pd.DataFrame):
+            raise TypeError(f"Expected pandas DataFrame, got {type(X)}")
+
+        if self.mode == "title":
+            if self.title_col not in X.columns:
+                raise ValueError(f"Missing column '{self.title_col}' for mode='title'.")
+            return [
+                normalize_japanese_text(t) if self.normalize else str(t)
+                for t in X[self.title_col].tolist()
+            ]
+
+        if self.mode == "lp_text":
+            if self.lp_col not in X.columns:
+                raise ValueError(f"Missing column '{self.lp_col}' for mode='lp_text'.")
+            return [self._prepare_lp(lp) for lp in X[self.lp_col].tolist()]
+
+        # mode == "pair"
+        for col in (self.title_col, self.lp_col):
+            if col not in X.columns:
+                raise ValueError(f"Missing column '{col}' for mode='pair'.")
+        return [
+            f"{(normalize_japanese_text(t) if self.normalize else str(t))}{self.separator}{self._prepare_lp(lp)}"
+            for t, lp in zip(X[self.title_col].tolist(), X[self.lp_col].tolist())
+        ]
+
+
+class ColumnTextNormalizer(BaseEstimator, TransformerMixin):
+    """Scikit-learn transformer normalizing a single text Series/array for ColumnTransformer."""
+
+    def __init__(self, normalize: bool = True, max_chars: Optional[int] = None):
+        self.normalize = normalize
+        self.max_chars = max_chars
+
+    def fit(self, X, y=None):
+        if self.max_chars is not None and self.max_chars <= 0:
+            raise ValueError(f"max_chars must be positive, got {self.max_chars}.")
+        return self
+
+    def transform(self, X) -> List[str]:
+        if isinstance(X, pd.DataFrame):
+            if X.shape[1] != 1:
+                raise ValueError(
+                    f"ColumnTextNormalizer expects a single column, got {X.shape[1]}."
+                )
+            values = X.iloc[:, 0].tolist()
+        elif isinstance(X, pd.Series):
+            values = X.tolist()
+        else:
+            values = list(X)
+
+        out: List[str] = []
+        for val in values:
+            txt = normalize_japanese_text(val) if self.normalize else str(val)
+            if self.max_chars is not None:
+                txt = txt[: self.max_chars]
+            out.append(txt)
+        return out
+

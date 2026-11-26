@@ -1,0 +1,93 @@
+{
+  "experiment_id": "m2_lexical_semantic_v001",
+  "primary_seed": 42,
+  "seeds": [42, 123],
+  "n_splits": 5,
+  "protocol": "protocol_b_group_disjoint",
+  "positive_class": "inconsistent",
+  "label_order": ["consistent", "inconsistent"],
+  "zero_division_policy": 0,
+  "group_bootstrap_resamples": 500,
+  "data": {
+    "raw_dir": "data/raw/adtec_consistency",
+    "train_only": true,
+    "valid_split_excluded": true,
+    "test_split_excluded": true,
+    "group_field": "lp_text",
+    "group_normalization": "unicode_nfkc_whitespace_collapse",
+    "m2_1_fold_manifest_path": "experiments/runs/m2_generalization_v001/fold_manifest.csv",
+    "m2_1_protocol_comparison_path": "experiments/runs/m2_generalization_v001/protocol_comparison.csv"
+  },
+  "lexical": {
+    "separator": " [SEP] ",
+    "normalize_unicode_nfkc": true,
+    "vectorizer": {
+      "analyzer": "char",
+      "ngram_range": [2, 4],
+      "max_features": 50000,
+      "min_df": 2,
+      "sublinear_tf": true
+    },
+    "interaction_features": [
+      "char_bigram_jaccard",
+      "char_trigram_jaccard",
+      "title_to_lp_bigram_containment",
+      "lp_to_title_bigram_containment",
+      "title_to_lp_trigram_containment",
+      "lp_to_title_trigram_containment",
+      "title_to_lp_char_containment",
+      "lp_to_title_char_containment",
+      "char_length_ratio",
+      "log_char_length_ratio",
+      "shared_char_count",
+      "shared_bigram_count",
+      "shared_trigram_count",
+      "title_char_length",
+      "lp_char_length"
+    ],
+    "dense_scaler": "StandardScaler (fit strictly inside each training fold)"
+  },
+  "semantic": {
+    "model_id": "intfloat/multilingual-e5-small",
+    "revision": "614241f622f53c4eeff9890bdc4f31cfecc418b3",
+    "license": "mit",
+    "device": "cpu",
+    "batch_size": 32,
+    "dtype": "float32",
+    "normalize_embeddings": true,
+    "title_prefix": "query: ",
+    "lp_prefix": "query: ",
+    "prefix_policy_note": "Per intfloat/multilingual-e5-small official model card FAQ #1, non-retrieval classification and symmetric pair feature extraction use the 'query: ' prefix for every input text. Applied identically to NFKC-normalized title and lp_text.",
+    "cache_base_dir": "data/processed/embeddings_cache",
+    "dense_scaler": "StandardScaler (fit strictly inside each training fold)"
+  },
+  "classifier": {
+    "model_family": "LogisticRegression",
+    "C": 1.0,
+    "class_weight": null,
+    "max_iter": 1000,
+    "solver": "lbfgs"
+  },
+  "overlap_subgroup_metrics": [
+    "char_bigram_jaccard",
+    "title_to_lp_bigram_containment"
+  ],
+  "models": [
+    {
+      "model_id": "L0_lexical_baseline",
+      "representation": "Char TF-IDF (2-4) on [title + SEP + lp_text]"
+    },
+    {
+      "model_id": "L1_lexical_interaction",
+      "representation": "Char TF-IDF (2-4) + 15 scaled pairwise lexical interaction features"
+    },
+    {
+      "model_id": "S1_semantic_e5_small",
+      "representation": "Frozen multilingual-e5-small [u, v, |u-v|, u*v, cos] (1537-d, scaled)"
+    },
+    {
+      "model_id": "S2_hybrid_lexical_semantic",
+      "representation": "L1 lexical representation + S1 semantic pair features (sparse+scaled)"
+    }
+  ]
+}

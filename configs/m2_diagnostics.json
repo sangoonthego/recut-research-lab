@@ -1,0 +1,50 @@
+{
+  "experiment_id": "m2_failure_diagnostics_v001",
+  "random_seed": 42,
+  "positive_class": "inconsistent",
+  "default_threshold": 0.5,
+  "label_order": ["consistent", "inconsistent"],
+  "zero_division_policy": 0,
+  "m2_reference_run": "experiments/runs/m2_baseline_v001",
+  "data": {
+    "raw_dir": "data/raw/adtec_consistency",
+    "train_split": "train",
+    "eval_split": "valid",
+    "test_split_protected": true,
+    "separator": " [SEP] ",
+    "normalize_unicode_nfkc": true
+  },
+  "vectorizer": {
+    "analyzer": "char",
+    "ngram_range": [2, 4],
+    "max_features": 50000,
+    "min_df": 2,
+    "sublinear_tf": true
+  },
+  "classifier": {
+    "model_family": "LogisticRegression",
+    "C": 1.0,
+    "class_weight": null,
+    "max_iter": 1000,
+    "solver": "lbfgs"
+  },
+  "d2_threshold": {
+    "grid_start": 0.05,
+    "grid_end": 0.95,
+    "grid_step": 0.05,
+    "cv_splits": 5,
+    "selection_objective": "f1_inconsistent"
+  },
+  "d3_representation": {
+    "cv_splits": 5,
+    "selection_objective": "macro_f1",
+    "r1_max_features_per_block": 50000,
+    "r2_title_weight_candidates": [1.5, 2.0, 3.0],
+    "r3_lp_max_chars_candidates": [40, 80, 120]
+  },
+  "latency_benchmark": {
+    "warmup_runs": 2,
+    "timed_runs": 7,
+    "method": "full_validation_batch_amortized_median"
+  }
+}

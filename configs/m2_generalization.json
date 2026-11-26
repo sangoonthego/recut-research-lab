@@ -1,0 +1,63 @@
+{
+  "experiment_id": "m2_generalization_v001",
+  "primary_seed": 42,
+  "seeds": [42, 123],
+  "candidate_n_splits": [3, 5],
+  "selected_n_splits": 5,
+  "positive_class": "inconsistent",
+  "label_order": ["consistent", "inconsistent"],
+  "zero_division_policy": 0,
+  "group_bootstrap_resamples": 500,
+  "data": {
+    "raw_dir": "data/raw/adtec_consistency",
+    "train_only": true,
+    "valid_split_excluded": true,
+    "test_split_excluded": true,
+    "group_field": "lp_text",
+    "group_normalization": "unicode_nfkc_whitespace_collapse"
+  },
+  "frozen_m2_baseline_config": {
+    "separator": " [SEP] ",
+    "normalize_unicode_nfkc": true,
+    "vectorizer": {
+      "analyzer": "char",
+      "ngram_range": [2, 4],
+      "max_features": 50000,
+      "min_df": 2,
+      "sublinear_tf": true
+    },
+    "classifier": {
+      "model_family": "LogisticRegression",
+      "C": 1.0,
+      "class_weight": null,
+      "max_iter": 1000,
+      "solver": "lbfgs"
+    },
+    "baselines": [
+      {
+        "model_id": "B0_majority",
+        "model_type": "majority",
+        "input_features": "none (training label prior)",
+        "input_mode": "none"
+      },
+      {
+        "model_id": "B1_title_only",
+        "model_type": "tfidf_logreg",
+        "input_features": "title",
+        "input_mode": "title"
+      },
+      {
+        "model_id": "B2_lp_only",
+        "model_type": "tfidf_logreg",
+        "input_features": "lp_text",
+        "input_mode": "lp_text"
+      },
+      {
+        "model_id": "B3_pair",
+        "model_type": "tfidf_logreg",
+        "input_features": "title + [SEP] + lp_text",
+        "input_mode": "pair"
+      }
+    ]
+  }
+}

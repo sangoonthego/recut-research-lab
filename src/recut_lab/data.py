@@ -203,6 +203,53 @@ def load_adtec_dataset(data_dir: Path | str = "data/raw/adtec_consistency") -> C
     )
 
 
+def load_adtec_train_valid(
+    data_dir: Path | str = "data/raw/adtec_consistency",
+) -> Tuple[pd.DataFrame, pd.DataFrame, Dict[str, Any]]:
+    """Load ONLY the official train and valid splits plus metadata, leaving test untouched.
+
+    This enforces strict split discipline during development and baseline comparison
+    by never reading the frozen test file from disk.
+
+    Args:
+        data_dir: Directory containing official split files and metadata.json.
+
+    Returns:
+        Tuple of (train_df, valid_df, metadata_dict).
+    """
+    dir_path = Path(data_dir)
+    if not dir_path.exists():
+        raise FileNotFoundError(
+            f"Dataset directory '{dir_path.resolve()}' does not exist. "
+            "Please download the dataset using 'python scripts/download_adtec.py'."
+        )
+
+    loaded: Dict[str, pd.DataFrame] = {}
+    for split in ["train", "valid"]:
+        found_file = None
+        for ext in [".tsv", ".jsonl", ".csv", ".parquet"]:
+            candidate = dir_path / f"{split}{ext}"
+            if candidate.exists():
+                found_file = candidate
+                break
+
+        if not found_file:
+            raise FileNotFoundError(
+                f"Could not find '{split}' split in '{dir_path.resolve()}'. "
+                f"Expected {split}.tsv, {split}.jsonl, or {split}.csv. "
+                "Run 'python scripts/download_adtec.py' to acquire the dataset."
+            )
+        loaded[split] = load_adtec_split(found_file, split_name=split)
+
+    metadata: Dict[str, Any] = {}
+    metadata_path = dir_path / "metadata.json"
+    if metadata_path.exists():
+        with metadata_path.open("r", encoding="utf-8") as f:
+            metadata = json.load(f)
+
+    return loaded["train"], loaded["valid"], metadata
+
+
 def save_adtec_tsv_splits(
     splits: Dict[str, pd.DataFrame],
     output_dir: Path | str,
